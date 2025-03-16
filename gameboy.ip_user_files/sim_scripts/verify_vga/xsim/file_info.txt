@@ -1,0 +1,6 @@
+verify_vga_lcd_to_vga_0_0.v,verilog,xil_defaultlib,../../../bd/verify_vga/ip/verify_vga_lcd_to_vga_0_0/sim/verify_vga_lcd_to_vga_0_0.v,
+verify_vga_proc_sys_reset_0_0.vhd,vhdl,xil_defaultlib,../../../bd/verify_vga/ip/verify_vga_proc_sys_reset_0_0/sim/verify_vga_proc_sys_reset_0_0.vhd,
+verify_vga_vga_driver_svga_0_0.v,verilog,xil_defaultlib,../../../bd/verify_vga/ip/verify_vga_vga_driver_svga_0_0/sim/verify_vga_vga_driver_svga_0_0.v,
+verify_vga_vga_verify_0_0.v,verilog,xil_defaultlib,../../../bd/verify_vga/ip/verify_vga_vga_verify_0_0/sim/verify_vga_vga_verify_0_0.v,
+verify_vga.v,verilog,xil_defaultlib,../../../bd/verify_vga/sim/verify_vga.v,
+glbl.v,Verilog,xil_defaultlib,glbl.v

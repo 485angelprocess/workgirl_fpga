@@ -1,0 +1,19 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  --include "../../../../gameboy.gen/sources_1/bd/display_driver/ipshared/3242" \
+"../../../../build/lcd_to_vga.v" \
+"../../../../build/vga_driver.v" \
+"../../../../build/vga_verify.v" \
+"../../../../gameboy.ip_user_files/bd/verify_vga/ip/verify_vga_lcd_to_vga_0_0/sim/verify_vga_lcd_to_vga_0_0.v" \
+"../../../../gameboy.ip_user_files/bd/verify_vga/ip/verify_vga_vga_driver_svga_0_0/sim/verify_vga_vga_driver_svga_0_0.v" \
+"../../../../gameboy.ip_user_files/bd/verify_vga/ip/verify_vga_vga_verify_0_0/sim/verify_vga_vga_verify_0_0.v" \
+"../../../../gameboy.ip_user_files/bd/verify_vga/sim/verify_vga.v" \
+"../../../../gameboy.gen/sources_1/bd/verify_vga/hdl/verify_vga_wrapper.v" \
+
+sv xil_defaultlib  --include "../../../../gameboy.gen/sources_1/bd/display_driver/ipshared/3242" \
+"../../../../gameboy.srcs/sim_1/new/tb_verify_vga.sv" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

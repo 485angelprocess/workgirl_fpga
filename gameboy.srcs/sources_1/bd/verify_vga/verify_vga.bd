@@ -1,0 +1,331 @@
+{
+  "design": {
+    "design_info": {
+      "boundary_crc": "0xF7C4739A2826AA75",
+      "device": "xc7a35tcpg236-1",
+      "gen_directory": "../../../../gameboy.gen/sources_1/bd/verify_vga",
+      "name": "verify_vga",
+      "rev_ctrl_bd_flag": "RevCtrlBdOff",
+      "synth_flow_mode": "Hierarchical",
+      "tool_version": "2024.1"
+    },
+    "design_tree": {
+      "lcd_to_vga_0": "",
+      "proc_sys_reset_0": "",
+      "vga_driver_svga_0": "",
+      "vga_verify_0": ""
+    },
+    "ports": {
+      "clk": {
+        "type": "clk",
+        "direction": "I",
+        "parameters": {
+          "FREQ_HZ": {
+            "value": "100000000"
+          }
+        }
+      },
+      "ext_reset_in": {
+        "type": "rst",
+        "direction": "I"
+      },
+      "reset_indicator": {
+        "type": "rst",
+        "direction": "O",
+        "left": "0",
+        "right": "0"
+      },
+      "vga_data": {
+        "direction": "O",
+        "left": "11",
+        "right": "0"
+      },
+      "vga_hsync": {
+        "direction": "O"
+      },
+      "vga_vsync": {
+        "direction": "O"
+      }
+    },
+    "components": {
+      "lcd_to_vga_0": {
+        "vlnv": "xilinx.com:module_ref:lcd_to_vga:1.0",
+        "ip_revision": "1",
+        "xci_name": "verify_vga_lcd_to_vga_0_0",
+        "xci_path": "ip\\verify_vga_lcd_to_vga_0_0\\verify_vga_lcd_to_vga_0_0.xci",
+        "inst_hier_path": "lcd_to_vga_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "lcd_to_vga",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "consume__valid": {
+            "direction": "I"
+          },
+          "consume__vsync": {
+            "direction": "I"
+          },
+          "produce__ready": {
+            "direction": "I"
+          },
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "ASSOCIATED_RESET": {
+                "value": "rst",
+                "value_src": "constant"
+              }
+            }
+          },
+          "rst": {
+            "type": "rst",
+            "direction": "I"
+          },
+          "consume__ready": {
+            "direction": "O"
+          },
+          "produce__data": {
+            "direction": "O",
+            "left": "11",
+            "right": "0"
+          },
+          "produce__valid": {
+            "direction": "O"
+          },
+          "produce__vsync": {
+            "direction": "O"
+          },
+          "consume__data": {
+            "direction": "I",
+            "left": "11",
+            "right": "0"
+          }
+        }
+      },
+      "proc_sys_reset_0": {
+        "vlnv": "xilinx.com:ip:proc_sys_reset:5.0",
+        "ip_revision": "15",
+        "xci_name": "verify_vga_proc_sys_reset_0_0",
+        "xci_path": "ip\\verify_vga_proc_sys_reset_0_0\\verify_vga_proc_sys_reset_0_0.xci",
+        "inst_hier_path": "proc_sys_reset_0"
+      },
+      "vga_driver_svga_0": {
+        "vlnv": "xilinx.com:module_ref:vga_driver_svga:1.0",
+        "ip_revision": "1",
+        "xci_name": "verify_vga_vga_driver_svga_0_0",
+        "xci_path": "ip\\verify_vga_vga_driver_svga_0_0\\verify_vga_vga_driver_svga_0_0.xci",
+        "inst_hier_path": "vga_driver_svga_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "vga_driver_svga",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "consume__valid": {
+            "direction": "I"
+          },
+          "consume__vsync": {
+            "direction": "I"
+          },
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "ASSOCIATED_RESET": {
+                "value": "rst",
+                "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "verify_vga_clk",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst": {
+            "type": "rst",
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_HIGH",
+                "value_src": "const_prop"
+              }
+            }
+          },
+          "consume__ready": {
+            "direction": "O"
+          },
+          "data": {
+            "direction": "O",
+            "left": "11",
+            "right": "0"
+          },
+          "hsync": {
+            "direction": "O"
+          },
+          "vsync": {
+            "direction": "O"
+          },
+          "consume__data": {
+            "direction": "I",
+            "left": "11",
+            "right": "0"
+          }
+        }
+      },
+      "vga_verify_0": {
+        "vlnv": "xilinx.com:module_ref:vga_verify:1.0",
+        "ip_revision": "1",
+        "xci_name": "verify_vga_vga_verify_0_0",
+        "xci_path": "ip\\verify_vga_vga_verify_0_0\\verify_vga_vga_verify_0_0.xci",
+        "inst_hier_path": "vga_verify_0",
+        "reference_info": {
+          "ref_type": "hdl",
+          "ref_name": "vga_verify",
+          "boundary_crc": "0x0"
+        },
+        "ports": {
+          "clk": {
+            "type": "clk",
+            "direction": "I",
+            "parameters": {
+              "ASSOCIATED_RESET": {
+                "value": "rst",
+                "value_src": "constant"
+              },
+              "FREQ_HZ": {
+                "value": "100000000",
+                "value_src": "user_prop"
+              },
+              "CLK_DOMAIN": {
+                "value": "verify_vga_clk",
+                "value_src": "default_prop"
+              }
+            }
+          },
+          "rst": {
+            "type": "rst",
+            "direction": "I",
+            "parameters": {
+              "POLARITY": {
+                "value": "ACTIVE_HIGH",
+                "value_src": "const_prop"
+              }
+            }
+          },
+          "produce__data": {
+            "direction": "O",
+            "left": "11",
+            "right": "0"
+          },
+          "produce__valid": {
+            "direction": "O"
+          },
+          "produce__vsync": {
+            "direction": "O"
+          },
+          "produce__ready": {
+            "direction": "I"
+          }
+        }
+      }
+    },
+    "nets": {
+      "clk_wiz_0_clk_out1": {
+        "ports": [
+          "clk",
+          "proc_sys_reset_0/slowest_sync_clk",
+          "vga_driver_svga_0/clk",
+          "vga_verify_0/clk",
+          "lcd_to_vga_0/clk"
+        ]
+      },
+      "ext_reset_in_1": {
+        "ports": [
+          "ext_reset_in",
+          "proc_sys_reset_0/ext_reset_in"
+        ]
+      },
+      "lcd_to_vga_0_consume__ready": {
+        "ports": [
+          "lcd_to_vga_0/consume__ready",
+          "vga_verify_0/produce__ready"
+        ]
+      },
+      "lcd_to_vga_0_produce__data": {
+        "ports": [
+          "lcd_to_vga_0/produce__data",
+          "vga_driver_svga_0/consume__data"
+        ]
+      },
+      "lcd_to_vga_0_produce__valid": {
+        "ports": [
+          "lcd_to_vga_0/produce__valid",
+          "vga_driver_svga_0/consume__valid"
+        ]
+      },
+      "lcd_to_vga_0_produce__vsync": {
+        "ports": [
+          "lcd_to_vga_0/produce__vsync",
+          "vga_driver_svga_0/consume__vsync"
+        ]
+      },
+      "proc_sys_reset_0_peripheral_reset": {
+        "ports": [
+          "proc_sys_reset_0/peripheral_reset",
+          "reset_indicator",
+          "vga_driver_svga_0/rst",
+          "vga_verify_0/rst",
+          "lcd_to_vga_0/rst"
+        ]
+      },
+      "vga_driver_svga_0_consume__ready": {
+        "ports": [
+          "vga_driver_svga_0/consume__ready",
+          "lcd_to_vga_0/produce__ready"
+        ]
+      },
+      "vga_driver_svga_0_data": {
+        "ports": [
+          "vga_driver_svga_0/data",
+          "vga_data"
+        ]
+      },
+      "vga_driver_svga_0_hsync": {
+        "ports": [
+          "vga_driver_svga_0/hsync",
+          "vga_hsync"
+        ]
+      },
+      "vga_driver_svga_0_vsync": {
+        "ports": [
+          "vga_driver_svga_0/vsync",
+          "vga_vsync"
+        ]
+      },
+      "vga_verify_0_produce__data": {
+        "ports": [
+          "vga_verify_0/produce__data",
+          "lcd_to_vga_0/consume__data"
+        ]
+      },
+      "vga_verify_0_produce__valid": {
+        "ports": [
+          "vga_verify_0/produce__valid",
+          "lcd_to_vga_0/consume__valid"
+        ]
+      },
+      "vga_verify_0_produce__vsync": {
+        "ports": [
+          "vga_verify_0/produce__vsync",
+          "lcd_to_vga_0/consume__vsync"
+        ]
+      }
+    }
+  }
+}
