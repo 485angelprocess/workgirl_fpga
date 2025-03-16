@@ -1,6 +1,6 @@
 # Gameboy Emulator
 
-Functional FPGA implementation of gameboy operation.
+Functional FPGA implementation of gameboy operation (functional as in not a faithful hardware copy, but it is not yet operatioanl)
 
 ## CPU
 
