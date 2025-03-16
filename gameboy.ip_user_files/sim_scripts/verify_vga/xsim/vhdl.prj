@@ -1,5 +1,0 @@
-vhdl xil_defaultlib  \
-"../../../bd/verify_vga/ip/verify_vga_proc_sys_reset_0_0/sim/verify_vga_proc_sys_reset_0_0.vhd" \
-
-# Do not sort compile order
-nosort
