@@ -45,25 +45,21 @@ class CycleType(object):
     Increment = 0b010
     End = 0b111
 
-class WritePort(wiring.Signature):
-    def __init__(self, address_shape, data_shape):
-        super().__init__({
-            "data": Out(data_shape),
-            "enable": Out(1)
-        })
-
-class ReadPort(wiring.Signature):
-    def __init__(self, address_shape, data_shape):
-        super().__init__({
-            "data": In(data_shape)
-        })
+def WritePort(address_shape, data_shape):
+    return data.StructLayout({
+        "data": data_shape,
+        "enable": 1
+    })
+    
+def ReadPort(address_shape, data_shape):
+    return data.StructLayout({"data": data_shape})
 
 class Bus(wiring.Signature):
     def __init__(self, address_shape, data_shape, sel_width = 4, burst = False):
     
         ports = {
             "w": Out(WritePort(address_shape, data_shape)),
-            "r": Out(ReadPort(address_shape, data_shape)),
+            "r": In(ReadPort(address_shape, data_shape)),
             "addr": Out(address_shape),
             "sel": Out(sel_width),
             "err": In(1),

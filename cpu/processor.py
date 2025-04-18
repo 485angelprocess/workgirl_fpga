@@ -4,9 +4,11 @@ from amaranth.lib.wiring import In, Out
 
 import common.signature as signature
 from common.signature import ImmReg
+from common.interconnect import AsyncBus
 
-import cpu.instruction as inst
-from cpu.instruction import Reg, WideReg
+from cpu.iset import LoadInstructionSet
+from cpu.instruction import *
+from cpu.alu import AluInterface
 
 def register():
     return data.UnionLayout({
@@ -24,107 +26,40 @@ def instruction():
     })
     
 class DebugReg(object):
+    SP = 0x08
+    PC = 0x09
     Op = 0x10
     Arg0 = 0x11
     Arg1 = 0x12
-    
+
 class Processor(wiring.Component):
     def __init__(self):
         super().__init__({
             "clk_en": In(1),
-            "program": Out(signature.Bus(16, 8)), # Load in program
-            "bus": Out(signature.Bus(16, 16)), # Data memory
-            "debug": In(signature.Bus(8, 16)) # Debugger
+            "program": Out(signature.Bus(16, 8)),
+            "bus": Out(signature.Bus(16, 8)),
+            "alu": In(AluInterface()),
+            "debug": In(signature.Bus(8, 16)),
+            "interrupt": In(signature.Bus(8, 16))
         })
-    
-    def get_instructions(self):
-        iset = dict()
-        iset[0x00] = inst.Noop()
         
-        # Load short
-        iset[0x06] = inst.LoadImmediate(Reg.B)
-        iset[0x0E] = inst.LoadImmediate(Reg.C)
-        iset[0x16] = inst.LoadImmediate(Reg.D)
-        iset[0x1E] = inst.LoadImmediate(Reg.E)
-        iset[0x26] = inst.LoadImmediate(Reg.H)
-        iset[0x2E] = inst.LoadImmediate(Reg.L)
-        iset[0x3E] = inst.LoadImmediate(Reg.A)
-        
-        # Load into register A into register A
-        iset[0x7F] = inst.LoadRegister(dest = Reg.A, source = Reg.A)
-        iset[0x47] = inst.LoadRegister(Reg.B, Reg.A)
-        iset[0x4F] = inst.LoadRegister(Reg.C, Reg.A)
-        iset[0x57] = inst.LoadRegister(Reg.D, Reg.A)
-        iset[0x5F] = inst.LoadRegister(Reg.E, Reg.A)
-        iset[0x67] = inst.LoadRegister(Reg.H, Reg.A)
-        iset[0x6F] = inst.LoadRegister(Reg.L, Reg.A)
-        
-        # Load into register A, B, C, D, E, H, L
-        regs = [Reg.A, Reg.B, Reg.C, Reg.D, Reg.E, Reg.H, Reg.L]
-        base = [0x78, 0x40, 0x48, 0x50, 0x58, 0x60, 0x68]
-        for reg in range(len(base)):
-            for i in range(5):
-                b = base[reg]
-                iset[b + i] = inst.LoadRegister(regs[reg], regs[i + 1])
-        
-        # Read from memory
-        regs = [Reg.A, Reg.B, Reg.C, Reg.D, Reg.E, Reg.H, Reg.L]
-        ops = [0x7E, 0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E]
-        for i in range(len(ops)):
-            iset[ops[i]] = inst.LoadRead(regs[i])
-            
-        # Write to memory
-        regs = [Reg.B, Reg.C, Reg.D, Reg.E, Reg.H, Reg.L]
-        ops = [0x70, 0x71, 0x72, 0x73, 0x74, 0x75]
-        for i in range(len(ops)):
-            iset[ops[i]] = inst.LoadWrite(regs[i])
-        
-        # Additional A register commands
-        iset[0x0A] = inst.LoadRead(Reg.A, (Reg.B, Reg.C))
-        iset[0x1A] = inst.LoadRead(Reg.A, (Reg.D, Reg.E))
-        iset[0xFA] = inst.LoadReadImm(Reg.A)
-        
-        iset[0x02] = inst.LoadWrite(Reg.A, (Reg.B, Reg.C))
-        iset[0x12] = inst.LoadWrite(Reg.A, (Reg.D, Reg.E))
-        iset[0x77] = inst.LoadWrite(Reg.A, (Reg.H, Reg.L))
-        iset[0xEA] = inst.LoadWriteImm(Reg.A)
-        
-        iset[0xF2] = inst.LoadRead.Offset(Reg.A)
-        iset[0xE2] = inst.LoadWrite.Offset(Reg.A)
-        
-        # Load and increment/decrement
-        iset[0x3A] = inst.LoadRead(Reg.A).set_macro(inst.Macro.decrement_hl)
-        iset[0x32] = inst.LoadWrite(Reg.A).set_macro(inst.Macro.decrement_hl)
-        iset[0x2A] = inst.LoadRead(Reg.A).set_macro(inst.Macro.increment_hl)
-        iset[0x22] = inst.LoadWrite(Reg.A).set_macro(inst.Macro.increment_hl)
-        
-        # Load offset from immediate
-        iset[0xE0] = inst.LoadWriteImm.Offset(Reg.A)
-        iset[0xF0] = inst.LoadReadImm.Offset(Reg.A)
-        
-        # Load 16 bit words
-        iset[0x01] = inst.LoadImmediate(WideReg.BC, 2)
-        iset[0x11] = inst.LoadImmediate(WideReg.DE, 2)
-        iset[0x21] = inst.LoadImmediate(WideReg.HL, 2)
-        iset[0x31] = inst.LoadImmediate(WideReg.SP, 2)
-        
-        # TODO:
-        # Stack pointer operations, POP, PUSh
-        
-        # ALU
-        
-        print("{}/245 implemented".format(len(iset)))
-        
-        return iset
+    def load_arguments(self, m, inst, ctx, a, b):
+        if len(inst.args) > 0:
+            m.d.sync += a.eq(inst.args[0].get(ctx))
+        if len(inst.args) > 1:
+            m.d.sync += b.eq(inst.args[1].get(ctx))
         
     def elaborate(self, platform):
         m = Module()
         
         command = Signal(instruction())
-        
         reg_data = Signal(register())
+        
         reg = reg_data.standard
+        wide = reg_data.wide
         pc = reg.long[1]
+        
+        iset = LoadInstructionSet()
         
         ##############################
         ## Debug interface ###########
@@ -132,8 +67,8 @@ class Processor(wiring.Component):
         debug = list()
         for r in (Reg.A, Reg.B, Reg.C, Reg.D, Reg.E, Reg.F, Reg.H, Reg.L):
             debug.append(ImmReg(r, reg.short[r]))
-        debug.append(ImmReg(Reg.SP, reg.long[0]))
-        debug.append(ImmReg(Reg.PC, reg.long[1]))
+        debug.append(ImmReg(DebugReg.SP, reg.long[0]))
+        debug.append(ImmReg(DebugReg.PC, reg.long[1]))
         debug.append(ImmReg(DebugReg.Op, command.op))
         debug.append(ImmReg(DebugReg.Arg0, command.arg[1]))
         debug.append(ImmReg(DebugReg.Arg1, command.arg[2]))
@@ -141,104 +76,144 @@ class Processor(wiring.Component):
         ImmReg.run_read(m, self.debug, debug)
         ImmReg.run_write(m, self.debug, debug)
         
-        ###############################
-        ## Setup instructions #########
-        ###############################
-        iset = self.get_instructions()
-        cycle_counter = Signal(8)
+        ###################
+        ## Parse op code ##
+        ###################
+        arg_counter = Signal(4)
         
-        ctx = inst.InstructionContext(self.bus, reg.short, reg_data.wide, command.arg, cycle_counter)
+        interrupt_enable = Signal(init = 1) # Flag enables or disables interrupt after next instruction
+        interrupt_latch = Signal() # Allows interrupts to go through
         
-        arg_counter = Signal(2)
+        # Introduce to do some asynchronous
+        # Tracking, would like to remove this at some poitn
+        run_counter = Signal(8)
+        arg_length = Signal(4)
         
-        m.d.comb += self.program.addr.eq(pc)
+        read_value = Signal(16)
         
-        # Length of current operation
-        arg_length = Signal(2)
-        read_length = Signal(2)
-        write_length = Signal(2)
-        command_done = Signal()
+        ctx = InstructionContext(register = reg.short, # 8 bit register
+                                wide = reg_data.wide,  # 16 bit registers
+                                arg = command.arg,     # Arguments
+                                arg_counter = arg_counter,
+                                alu = self.alu,
+                                ram_bus = self.bus,
+                                read_value = read_value,
+                                interrupt_enable = interrupt_enable)
         
-        # Run command
-        command_ready = Signal()
-        m.d.comb += command_ready.eq(arg_counter == arg_length)
+        opcode = command.op
         
-        with m.Switch(command.op):
-            for key in iset:
-                with m.Case(key):
-                    m.d.comb += arg_length.eq(iset[key].length())
-                    m.d.comb += command_done.eq(iset[key].done(ctx))
-                    m.d.comb += write_length.eq(iset[key].write_length())
-                    m.d.comb += read_length.eq(iset[key].read_length())
-                    m.d.comb += self.bus.addr.eq(iset[key].address(ctx))
-                    m.d.comb += self.bus.w.data.eq(iset[key].write_data(ctx))
+        # Get arg length for current instruction
+        with m.Switch(opcode):
+            for o in iset:
+                with m.Case(o):
+                    m.d.comb += arg_length.eq(iset[o].arg_length())
             with m.Default():
-                m.d.comb += arg_length.eq(1)
-                m.d.comb += command_done.eq(1)
+                m.d.sync += Print("Unimplemented command ", command.op)
+                m.d.sync += Assert(0, "Unimplemented command")
+                m.d.comb += arg_length.eq(0)
+                    
+        ####################
+        ## Load program in #
+        ####################
+        program_async = m.submodules.program_async = AsyncBus()
+        wiring.connect(m, program_async.bus, wiring.flipped(self.program))
         
-        cycle_next = Signal(8)
+        run_state = dict()
         
-        with m.If(self.clk_en):
-            m.d.sync += cycle_counter.eq(cycle_counter + 1)
-                
-        # Load in from program bus
-        program_busy = Signal()
+        # Collect states, which are the types of instructions that can be run
+        for o in iset:
+            state = iset[o].run()
+            if state not in run_state:
+                run_state[state] = iset[o].describe
+       
+        # Temp registers for operations 
+        a = Signal(16)
+        b = Signal(16)
         
-        with m.If(command_done & command_ready):
-            m.d.sync += cycle_counter.eq(0)
-            m.d.sync += command.op.eq(0)
-            m.d.sync += arg_counter.eq(0)
+        with m.If(program_async.r_ready):
+            m.d.sync += command.arg[arg_counter].eq(program_async.r_data)
             
-        m.d.comb += self.program.addr.eq(pc)
+        # Current location of program counter
+        m.d.comb += program_async.addr.eq(pc)
         
-        with m.If(self.program.stb & self.program.ack):
-            m.d.sync += arg_counter.eq(arg_counter + 1)
-            m.d.sync += pc.eq(pc + 1)
-            with m.If(arg_counter == arg_length):
-                # TODO flag this as debug
-                m.d.sync += Print("Loaded command ", command.op)
-            m.d.sync += command.arg[arg_counter].eq(self.program.r.data)
-        
-        # Allow for slow bus reads
-        with m.If(self.program.stb & ~self.program.ack):
-            m.d.sync += program_busy.eq(1)
-        with m.Elif(self.program.stb & self.program.ack):
-            m.d.sync += program_busy.eq(0)
-        
-        with m.If(self.clk_en | program_busy):
-            with m.If(arg_counter == 0):
-                # Load instruction
-                m.d.comb += self.program.stb.eq(1)
-                m.d.comb += self.program.cycle.eq(1)
-            with m.Else():
-                with m.If(arg_counter < arg_length):
-                    m.d.comb += self.program.stb.eq(1)
-                    m.d.comb += self.program.cycle.eq(1)
-        
-        bus_busy = Signal()
-        with m.If(self.bus.stb & ~self.bus.ack):
-            m.d.sync += bus_busy.eq(1)
-        with m.If(self.bus.stb & self.bus.ack):
-            m.d.sync += bus_busy.eq(0)
-        
-        with m.If(write_length > 0):
-            with m.If((command_ready & self.clk_en) | bus_busy):
+        with m.FSM():
+            with m.State("fetch"): # TODO rename to fetch
+                ################################
+                # Load in arguments of opcode ##
+                ################################
+                m.d.comb += program_async.r_en.eq(self.clk_en)
+                
+                with m.If(interrupt_latch & self.interrupt.stb):
+                    # Interrupts are enabled, when received, do interrupt
+                    m.d.comb += self.interrupt.ack.eq(1)
+                    m.d.sync += Assert(0, "Interrupts not implemented")
+                    # TODO jump to interrupt
+                with m.Elif(program_async.r_ready):
+                    # Instruction was fetched,
+                    # Increment program counter
+                    m.d.sync += pc.eq(pc + 1)
+                    m.next = "check"
+                    
+            with m.State("check"):
+                with m.If(arg_counter == arg_length):
+                    # All arguments were loaded
+                    m.d.sync += arg_counter.eq(0)
+                    
+                    # Latches on instruction after it was changed
+                    m.d.sync += interrupt_latch.eq(interrupt_enable)
+                    
+                    ###############################
+                    # Jump to first state required by instruction
+                    with m.Switch(opcode):
+                        for o in iset:
+                            with m.Case(o):
+                                m.next = iset[o].on_load()
+                                self.load_arguments(m, iset[o], ctx, a, b)
+                    ###############################
+                with m.Else():
+                    # Op code requires more than 1 byte
+                    m.d.sync += arg_counter.eq(arg_counter + 1)
+                    m.next = "fetch"
+                    
+            with m.State("halted"):
+                # Halts until interrupt occurs
+                m.d.sync += interrupt_latch.eq(1) # Make sure interrupt is used
+                with m.If(self.interrupt.stb):
+                    # Jump to something from interrupt table?
+                    m.next = "fetch"
+                    
+            with m.State("stopped"):
+                # Stops until button pressed
+                # TODO send data to stop LCD Display
+                m.d.sync += interrupt_latch.eq(1) # May not be proper state
+                with m.If(self.interrupt.stb):
+                    m.next = "fetch"
+            with m.State("read"):
+                ###############################
+                # Load in value from address ##
+                ###############################
                 m.d.comb += self.bus.stb.eq(1)
                 m.d.comb += self.bus.cycle.eq(1)
-                m.d.comb += self.bus.w.enable.eq(1)
-        
-        with m.If(read_length > 0):
-            with m.If((command_ready & self.clk_en) | bus_busy):
-                m.d.comb += self.bus.stb.eq(1)
-                m.d.comb += self.bus.cycle.eq(1)
-        
-        with m.If(command_ready):
-            with m.Switch(command.op):
-                for key in iset:
-                    with m.Case(key):
-                        iset[key].operate(m, ctx)
-                with m.Default():
-                    m.d.sync += Print("Unimplemented command ", command.op)
-                    m.d.sync += Assert(0, "Unimplemented command")
-        
+                
+                # Address based on operation
+                with m.Switch(opcode):
+                    for o in iset:
+                        read_address = iset[o].read_address()
+                        if read_address is not None:
+                            #print("Read address for 0x{:02X} is {}".format(o, read_address))
+                            with m.Case(o):
+                                #m.d.sync += Print("Read address is ", read_address.get(ctx))
+                                m.d.comb += self.bus.addr.eq(read_address.get(ctx))
+                                
+                                with m.If(self.bus.ack):
+                                    self.load_arguments(m, iset[o], ctx, a, b)
+                                    m.next = iset[o].on_read()
+                    with m.Default():
+                        # Catch while verifying
+                        m.d.sync += Assert(0, "Invalid command for reading")
+            for state in run_state:
+                # These are states defined by instructions
+                with m.State(state):
+                    run_state[state](m, ctx, a, b, run_counter)
+            
         return m

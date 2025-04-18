@@ -25,10 +25,15 @@ class WishboneRam(wiring.Component):
         
         ports = {"bus": In(signature.Bus(address_shape, write_shape, burst = False))}
         
+        ports |= {"verify": In(signature.Bus(address_shape, write_shape, burst = False))}
+        
         if has_stream:
             ports |= {"produce": Out(signature.VideoStream(stream_shape))}
             
         super().__init__(ports)
+            
+    def get_memory_object(self):
+        return self._memory
             
     def address_space(self):
         divide = int(math.log(self.write_shape) / math.log(2.0))
@@ -48,19 +53,20 @@ class WishboneRam(wiring.Component):
             m.d.comb += self.bus.ack.eq(write_port.en)
             m.d.comb += write_port.en.eq(self.bus.stb & self.bus.cycle & (strobe_last))
             
-    def read_bus(self, m, read_port):
+    def read_bus(self, m, read_port, port = "bus"):
         """
         Read framebuffer from bus
         """
-        m.d.comb += self.bus.r.data.eq(read_port.data)
-        m.d.comb += read_port.addr.eq(self.bus.addr)
+        bus = getattr(self, port)
+        m.d.comb += bus.r.data.eq(read_port.data)
+        m.d.comb += read_port.addr.eq(bus.addr)
         
         read_valid = Signal()
         
-        with m.If(~self.bus.w.enable):
-            m.d.comb += self.bus.ack.eq(read_valid & self.bus.stb)
+        with m.If(~bus.w.enable):
+            m.d.comb += bus.ack.eq(read_valid & bus.stb)
             m.d.sync += read_valid.eq(read_port.en)
-            m.d.comb += read_port.en.eq(self.bus.stb & self.bus.cycle  & ~self.bus.ack)
+            m.d.comb += read_port.en.eq(bus.stb & bus.cycle  & ~bus.ack)
             
     def stream(self, m, read_port):
         """
@@ -101,10 +107,14 @@ class WishboneRam(wiring.Component):
         m = Module()
         
         frame_size = self.width * self.height
-        buffer = m.submodules.buffer = memory.Memory(shape = self.write_shape, depth = frame_size, init = self.init)
+        md = memory.MemoryData(shape = self.write_shape, depth = frame_size, init = self.init)
+        buffer = m.submodules.buffer = self._memory = memory.Memory(md)
         
         self.write_bus(m, buffer.write_port(granularity = self.granularity))
         self.read_bus(m, buffer.read_port())
+        
+        # TODO make this optional
+        self.read_bus(m, buffer.read_port(), port = "verify")
         
         if self.has_stream:
             self.stream(m, buffer.read_port(domain = "comb"))

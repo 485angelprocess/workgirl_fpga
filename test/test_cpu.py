@@ -1,8 +1,7 @@
 from common.mem import WishboneRam, Cache, CacheMap
-from common.signature import BusTb
 
 from cpu.processor import DebugReg, Processor
-from cpu.instruction import Reg
+from cpu.instruction import Reg, WideReg
 
 from amaranth import *
 from amaranth.sim import *
@@ -30,7 +29,7 @@ class TestCpu(unittest.TestCase):
         dut = Module()
         dut.submodules.cpu = cpu = Processor()
         dut.submodules.prog_mem = prog = WishboneRam(64, write_shape = 8)
-        dut.submodules.mem = mem = WishboneRam(64, write_shape = 16)
+        dut.submodules.mem = mem = WishboneRam(64, write_shape = 8)
         
         prog.init = program
         
@@ -54,7 +53,7 @@ class TestCpu(unittest.TestCase):
         
         async def process(ctx):
             await step_program(ctx, cpu, len(program))
-            assert await BusTb.read_single(ctx, cpu.debug, Reg.PC) == 4
+            assert await BusTb.read_single(ctx, cpu.debug, DebugReg.PC) == 4
         
         self.simulate(dut, "noop", process)
     

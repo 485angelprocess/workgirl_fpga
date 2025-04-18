@@ -187,5 +187,71 @@ def tb_interconnect():
     with sim.write_vcd("bench/tb_interconnect.vcd"):
         sim.run()
         
+class AsyncBus(wiring.Component):
+    def __init__(self, address_shape = 16, data_shape = 8):
+        """
+        Wrapper to make it easier to make an async bus transaction
+        """
+        super().__init__({
+            "bus": Out(signature.Bus(address_shape, data_shape)),
+            
+            # Pulse to start read/write transaction
+            "r_en": In(1),
+            "w_en": In(1),
+            
+            # Bus address
+            "addr": In(address_shape),
+            
+            # Data
+            "w_data": In(data_shape),
+            "r_data": Out(data_shape),
+            
+            # Pulses when transaction is finished
+            "r_ready": Out(1),
+            "w_done": Out(1)
+        })
+        
+    def connect(self, m, bus):
+        wiring.connect(m, bus, wiring.flipped(self.bus))
+    
+    def elaborate(self, platform):
+        m = Module()
+        
+        busy = Signal()
+        w_reg = Signal()
+        
+        address_reg = Signal(16)
+        data_reg = Signal(8)
+        
+        m.d.comb += self.bus.stb.eq(self.w_en | self.r_en | busy)
+        m.d.comb += self.bus.w.enable.eq(self.w_en | w_reg)
+        m.d.comb += self.bus.cycle.eq(self.bus.stb)
+        
+        with m.If(busy):
+            m.d.comb += self.bus.addr.eq(address_reg)
+            m.d.comb += self.bus.w.data.eq(data_reg)
+        with m.Else():
+            m.d.comb += self.bus.w.data.eq(self.w_data)
+            m.d.comb += self.bus.addr.eq(self.addr)
+        
+        with m.If(self.bus.stb & ~self.bus.ack):
+            m.d.sync += busy.eq(1)
+            m.d.sync += w_reg.eq(self.w_en)
+            m.d.sync += data_reg.eq(self.w_data)
+            m.d.sync += address_reg.eq(self.addr)
+        with m.If(self.bus.stb & self.bus.ack):
+            m.d.sync += busy.eq(0)
+            m.d.sync += w_reg.eq(0)
+            m.d.sync += data_reg.eq(0)
+            m.d.sync += address_reg.eq(0)
+            
+            m.d.comb += self.r_data.eq(self.bus.r.data)
+            with m.If(self.w_en | w_reg):
+                m.d.comb += self.w_done.eq(1)
+            with m.Else():
+                m.d.comb += self.r_ready.eq(1)
+        
+        return m
+        
 if __name__ == "__main__":
     tb_interconnect()
