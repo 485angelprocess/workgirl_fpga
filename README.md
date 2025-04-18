@@ -1,10 +1,10 @@
-# Gameboy Emulator
+# Workgirl Emulator
 
-Functional FPGA implementation of gameboy operation (functional as in not a faithful hardware copy, but it is not yet operatioanl)
+Functional FPGA implementation of workgirl operation (functional as in not a faithful hardware copy, but it is not yet operatioanl)
 
 ## CPU
 
-The original CPU of the gameboy is a unique implementation, it is close to an intel 8080 or z80 processor.
+The original CPU of the workgirl is a unique implementation, it is close to an intel 8080 or z80 processor.
 There are some instruction differences and details.
 
 ## PPU
